@@ -1,0 +1,13 @@
+{
+    "savedir": "./output",
+    "sites": [
+        {
+            "url": "http://www.weerplaza.nl/nederland/amsterdam/5575/",
+            "type": "weerplaza-detail"
+        },
+        {
+            "url": "http://www.buienradar.nl/weer/amsterdam/nl/2759794",
+            "type": "buienradar-detail"
+        }
+    ]
+}
