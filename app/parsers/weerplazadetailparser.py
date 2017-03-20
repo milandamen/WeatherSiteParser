@@ -9,8 +9,12 @@ class WeerplazaDetailParser:
     
     # Can throw exceptions if errors in parsing
     def parse(self, site, data):
-        root = fromstring(data)
-        result = {}
+        self.site = site
+        self.data = data
+        self.result = result = {}
+        
+        root = fromstring(data)                             # Get the root element of the html page
+        
         result["dayprediction"] = []
         result["hourprediction"] = []
         
@@ -20,8 +24,24 @@ class WeerplazaDetailParser:
                       .getchildren()[1]
                       .cssselect("table"))      # <table>
         
-        # Coming 7 days
-        tbody = tables[0].getchildren()[0]      # <tbody>
+        self.parse7Days(tables[0])              # Parse first 7 days
+        self.parse7Days(tables[len(tables) - 1])# Parse next 7 days
+        
+        table = root.cssselect(".forecast-hourly .content table")[0]
+        
+        self.parse48Hours(table)
+        
+        print("Result for %s:" % site.url)
+        pprint.pprint(result)
+        
+        return root
+    
+    # Parse 7 days of the 14 days
+    def parse7Days(self, table):
+        result = self.result
+        startIndex = len(result["dayprediction"])
+        
+        tbody = table.getchildren()[0]          # <tbody>
         row = tbody.getchildren()[0]            # <tr>          first row
         for td in row.getchildren():            # <td>          each td
             d = {}
@@ -46,14 +66,14 @@ class WeerplazaDetailParser:
             weatherDiv = td.cssselect(".wx")[0]
             weatherStyle = weatherDiv.attrib["style"]
             #regex: background-image: url\('.+\/(.+).png'\)
-            weatherRegex = re.search("background-image: url\('.+\/(.+).png'\)", weatherStyle)
+            weatherRegex = re.search("background-image: url\('.+\/(.+)@2x.png'\)", weatherStyle)
             weather["id"] = weatherRegex.group(1)       # First capture group
             weather["title"] = weatherDiv.attrib["title"]
             d["weather"] = weather
             
             result["dayprediction"].append(d)
         
-        i = 0
+        i = startIndex
         row = tbody.getchildren()[1]            # <tr>          second row
         for td in row.getchildren():            # <td>          each td
             d = result["dayprediction"][i]
@@ -63,7 +83,7 @@ class WeerplazaDetailParser:
             d["sunchance"] = sunchanceDiv.text_content().strip(" %")
             i += 1
         
-        i = 0
+        i = startIndex
         row = tbody.getchildren()[2]            # <tr>          third row
         for td in row.getchildren():            # <td>          each td
             d = result["dayprediction"][i]
@@ -78,7 +98,7 @@ class WeerplazaDetailParser:
             d["temperature"] = temp
             i += 1
         
-        i = 0
+        i = startIndex
         row = tbody.getchildren()[3]            # <tr>          fourth row
         for td in row.getchildren():            # <td>          each td
             d = result["dayprediction"][i]
@@ -95,7 +115,7 @@ class WeerplazaDetailParser:
             d["rain"] = rain
             i += 1
         
-        i = 0
+        i = startIndex
         row = tbody.getchildren()[4]            # <tr>          fifth row
         for td in row.getchildren():            # <td>          each td
             d = result["dayprediction"][i]
@@ -110,8 +130,14 @@ class WeerplazaDetailParser:
             
             d["wind"] = wind
             i += 1
+    
+    # Parse coming 48 hours
+    def parse48Hours(self, table):
+        result = self.result
         
-        print("Result for %s:" % site.url)
-        pprint.pprint(result)
+        tbody = table.getchildren()[0]          # <tbody>
+        row = tbody.getchildren()[0]            # <tr>          first row
+        for td in row.getchildren():            # <td>          each td
+            d = {}
+            
         
-        return root
