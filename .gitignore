@@ -92,3 +92,4 @@ ENV/
 # Custon
 .kdev4/
 WeatherSiteParser.kdev4
+output/*.json

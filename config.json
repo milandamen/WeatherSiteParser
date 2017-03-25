@@ -3,11 +3,18 @@
     "sites": [
         {
             "url": "http://www.weerplaza.nl/nederland/amsterdam/5575/",
-            "type": "weerplaza-detail"
+            "type": "weerplaza-detail",
+            "filePath": "output/wp-amsterdam.json"
         },
         {
-            "url": "http://www.buienradar.nl/weer/amsterdam/nl/2759794",
-            "type": "buienradar-detail"
+            "url": "http://www.weerplaza.nl/nederland/eindhoven/9020/",
+            "type": "weerplaza-detail",
+            "filePath": "output/wp-eindhoven.json"
+        },
+        {
+            "url": "http://api.buienradar.nl/data/forecast/1.1/all/2759794",
+            "type": "buienradar-detail",
+            "filePath": "output/br-amsterdam.json"
         }
     ]
 }

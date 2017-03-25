@@ -3,6 +3,8 @@
 # TODO requirement: sudo pip3 install lxml
 # TODO requirement: sudo pip3 install cssselect
 
+import json
+
 from app.config import Config
 from app.parsers.parsermanager import ParserManager
 
@@ -17,6 +19,8 @@ for site in config.sites:
         continue
     
     # Parse the response
-    result = parserManager.parse(site, response)    # TODO add try/catch
+    result = parserManager.parse(site, response)
     if result == False:
         continue
+    
+    site.saveResult(result)

@@ -1,16 +1,14 @@
+import datetime
 import re
-import pprint       # TODO remove
 from lxml.html import fromstring
 
 class WeerplazaDetailParser:
     
     def __init__(self):
-        pass
+        self.weekdays = ["ma", "di", "wo", "do", "vr", "za", "zo"]
     
     # Can throw exceptions if errors in parsing
     def parse(self, site, data):
-        self.site = site
-        self.data = data
         self.result = result = {}
         
         root = fromstring(data)                             # Get the root element of the html page
@@ -31,10 +29,7 @@ class WeerplazaDetailParser:
         
         self.parse48Hours(table)
         
-        print("Result for %s:" % site.url)
-        pprint.pprint(result)
-        
-        return root
+        return result
     
     # Parse 7 days of the 14 days
     def parse7Days(self, table):
@@ -61,7 +56,7 @@ class WeerplazaDetailParser:
             if not "rating" in d:
                 print("No weather rating found for row")
                 
-            # Cloud image
+            # Weather icon
             weather = {}
             weatherDiv = td.cssselect(".wx")[0]
             weatherStyle = weatherDiv.attrib["style"]
@@ -140,4 +135,79 @@ class WeerplazaDetailParser:
         for td in row.getchildren():            # <td>          each td
             d = {}
             
+            # Date and time
+            day = td.getchildren()[0].getchildren()[0].text
+            time = td.getchildren()[0].getchildren()[1].text.split(":")
+            
+            dayIndex = self.weekdays.index(day)
+            now = datetime.datetime.today()
+            
+            # Get the correct datetime for the target day
+            destDay = None
+            if now.weekday() is dayIndex:
+                destDay = now
+            elif dayIndex > now.weekday():
+                destDay = now + datetime.timedelta(days=(dayIndex - now.weekday()))
+            else:
+                destDay = now + datetime.timedelta(days=(7 - (now.weekday() - dayIndex)))
+            
+            destDay = destDay.replace(
+                hour = int(time[0]),
+                minute = int(time[1])
+            )
+            
+            d["date"] = destDay.strftime("%Y%m%d")
+            d["time"] = destDay.strftime("%H%M")
+            
+            # Weather icon
+            weather = {}
+            weatherDiv = td.cssselect(".wx")[0]
+            weatherStyle = weatherDiv.attrib["style"]
+            #regex: background-image: url\('.+\/(.+).png'\)
+            weatherRegex = re.search("background-image: url\('.+\/(.+).png'\)", weatherStyle)
+            weather["id"] = weatherRegex.group(1)       # First capture group
+            d["weather"] = weather
+            
+            result["hourprediction"].append(d)
+        
+        i = 0
+        row = tbody.getchildren()[1]            # <tr>          second row
+        for td in row.getchildren():            # <td>          each td
+            d = result["hourprediction"][i]
+            temp = {}
+            
+            # Max temperature in degrees Celcius
+            temp["max"] = td.cssselect("div.red.temp")[0].text.strip()[:-2]
+            
+            d["temperature"] = temp
+            i += 1
+        
+        i = 0
+        row = tbody.getchildren()[3]            # <tr>          fourth row
+        for td in row.getchildren():            # <td>          each td
+            d = result["hourprediction"][i]
+            rain = {}
+            
+            # Rain amount in mm
+            rainAmountDiv = td.getchildren()[1]
+            rain["amount"] = rainAmountDiv.text.strip(" m")
+            
+            d["rain"] = rain
+            i += 1
+        
+        i = 0
+        row = tbody.getchildren()[5]            # <tr>          sixth row
+        for td in row.getchildren():            # <td>          each td
+            d = result["hourprediction"][i]
+            wind = {}
+            
+            windDescription = td.getchildren()[0].text.split(" ")
+            
+            # Wind direction
+            wind["direction"] = windDescription[0]
+            # Wind power
+            wind["power"] = windDescription[1]
+            
+            d["wind"] = wind
+            i += 1
         
